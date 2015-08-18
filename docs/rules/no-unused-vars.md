@@ -98,6 +98,11 @@ The following code:
 })();
 ```
 
+#### Ignore identifiers that match specific patterns
+
+* `varsIgnorePattern` - all variables that match this regexp pattern will not be checked.
+* `argsIgnorePattern` - all arguments that match this regexp pattern will not be checked.
+
 ## When Not to Use It
 
 If you don't want to be notified about unused variables or function arguments, you can safely turn this rule off.
