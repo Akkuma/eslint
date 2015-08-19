@@ -86,11 +86,11 @@ Note that you can leave off the `.js` from the filename. In this way, you can ad
 
 **Important:** We strongly recommend always including a default config for your plugin to avoid errors.
 
-## Dynamic Configs With Local File Resolution
+## Local Config File Resolution
 
-If you need to make a config that can handle various scenarios, such as local development and CI, you can create a single config that handles all these scenarios.
+If you need to make multiple configs that can extend from each other and live in different directories, you can create a single shareable config that handles this scenario.
 
-As an example, let's assume you're using the package name `eslint-config-myconfig` and you have an environment variable `APP_ENVIRONMENT` that is either `'dev'` or `'ci'` and an environment variable `REPO_TYPE` that is either `frontend` or `backend`. Let's also assume your package looks something like this:
+As an example, let's assume you're using the package name `eslint-config-myconfig` and your package looks something like this:
 
 ```text
 myconfig
@@ -99,7 +99,7 @@ myconfig
   ├── defaults.js
   ├── dev.js
   ├── ci.js
-  └─┬ deploy
+  └─┬ ci
     ├── frontend.js
     ├── backend.js
     └── common.js
@@ -108,7 +108,7 @@ myconfig
 In your `index.js` you can do something like this:
 
 ```js
-module.exports = require('./lib/' + process.env.APP_ENVIRONMENT);
+module.exports = require('./lib/ci.js);
 ```
 
 Now inside your package you have `/lib/defaults.js`, which contains:
@@ -121,22 +121,13 @@ module.exports = {
 };
 ```
 
-Inside your `/lib/dev.js` you have:
-
-```js
-module.exports = {
-    extends: 'myconfig/lib/defaults'
-};
-```
-You'll notice that the above uses your package name and then the path to the file. ESLint cannot resolve relative paths inside of your package, because it leverages `require` to load the extends.
-
 Inside your `/lib/ci.js` you have
 
 ```js
-module.exports = require('./deploy/' + process.env.REPO_TYPE);
+module.exports = require('./ci/backend');
 ```
 
-Inside your `/lib/deploy/common.js`
+Inside your `/lib/ci/common.js`
 
 ```js
 module.exports = {
@@ -148,28 +139,17 @@ module.exports = {
 ```
 Despite being in an entirely different directory, you'll see that all `extends` must use the full package path to the config file you wish to extend.
 
-Now inside your `/lib/deploy/frontend.js`
-
-```js
-module.exports = {
-    rules: {
-        'no-console': 2
-    },
-    extends: 'myconfig/lib/deploy/common'
-};
-```
-
-and finally inside your `/lib/deploy/backend.js`
+Now inside your `/lib/ci/backend.js`
 
 ```js
 module.exports = {
     rules: {
         'no-console': 1
     },
-    extends: 'myconfig/lib/deploy/common'
+    extends: 'myconfig/lib/ci/common'
 };
 ```
-In the last two files, you'll once again see that to properly resolve your config, you'll need include the full package path.
+In the last file, you'll once again see that to properly resolve your config, you'll need include the full package path.
 
 ## Further Reading
 
