@@ -86,6 +86,91 @@ Note that you can leave off the `.js` from the filename. In this way, you can ad
 
 **Important:** We strongly recommend always including a default config for your plugin to avoid errors.
 
+## Dynamic Configs With Local File Resolution
+
+If you need to make a config that can handle various scenarios, such as local development and CI, you can create a single config that handles all these scenarios.
+
+As an example, let's assume you're using the package name `eslint-config-myconfig` and you have an environment variable `APP_ENVIRONMENT` that is either `'dev'` or `'ci'` and an environment variable `REPO_TYPE` that is either `frontend` or `backend`. Let's also assume your package looks something like this:
+
+```text
+myconfig
+├── index.js
+└─┬ lib
+  ├── defaults.js
+  ├── dev.js
+  ├── ci.js
+  └─┬ deploy
+    ├── frontend.js
+    ├── backend.js
+    └── common.js
+```
+
+In your `index.js` you can do something like this:
+
+```js
+module.exports = require('./lib/' + process.env.APP_ENVIRONMENT);
+```
+
+Now inside your package you have `/lib/defaults.js`, which contains:
+
+```js
+module.exports = {
+    rules: {
+        'no-console': 1
+    }
+};
+```
+
+Inside your `/lib/dev.js` you have:
+
+```js
+module.exports = {
+    extends: 'myconfig/lib/defaults'
+};
+```
+You'll notice that the above uses your package name and then the path to the file. ESLint cannot resolve relative paths inside of your package, because it leverages `require` to load the extends.
+
+Inside your `/lib/ci.js` you have
+
+```js
+module.exports = require('./deploy/' + process.env.REPO_TYPE);
+```
+
+Inside your `/lib/deploy/common.js`
+
+```js
+module.exports = {
+    rules: {
+        'no-alert': 2
+    },
+    extends: 'myconfig/lib/defaults'
+};
+```
+Despite being in an entirely different directory, you'll see that all `extends` must use the full package path to the config file you wish to extend.
+
+Now inside your `/lib/deploy/frontend.js`
+
+```js
+module.exports = {
+    rules: {
+        'no-console': 2
+    },
+    extends: 'myconfig/lib/deploy/common'
+};
+```
+
+and finally inside your `/lib/deploy/backend.js`
+
+```js
+module.exports = {
+    rules: {
+        'no-console': 1
+    },
+    extends: 'myconfig/lib/deploy/common'
+};
+```
+In the last two files, you'll once again see that to properly resolve your config, you'll need include the full package path.
+
 ## Further Reading
 
 * [npm Developer Guide](https://www.npmjs.org/doc/misc/npm-developers.html)
